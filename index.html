@@ -246,7 +246,6 @@
     outline: 1px dashed var(--border);
   }
   .hidden { display: none !important; }
-  .print-only { display: none; }
   .product-section {
     max-width: 640px;
     margin: 0 auto 16px auto;
@@ -269,34 +268,11 @@
     flex-wrap: wrap;
     justify-content: center;
   }
-
-  @media print {
-    body { background: #fff !important; color: #000 !important; padding: 0; }
-    .toolbar, .stats, .footer-actions, .product-actions, .subtitle,
-    #raffleTitle, .overlay, #imageInput, #importFile { display: none !important; }
-    .print-only { display: block !important; text-align: center; margin: 0 0 12px 0; }
-    .product-image { max-height: 260px; margin: 0 auto 16px auto; }
-    .grid { max-width: 100%; }
-    .cell {
-      border: 1px solid #000 !important;
-      background: #fff !important;
-      color: #000 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .cell.sold {
-      background: #16a34a !important;
-      color: #fff !important;
-    }
-    .legend { color: #000; }
-    .swatch.available { background: #fff !important; border-color: #000; }
-  }
 </style>
 </head>
 <body>
 
 <input id="raffleTitle" type="text" value="Mi Rifa" spellcheck="false">
-<h1 class="print-only" id="printTitle">Mi Rifa</h1>
 <div class="subtitle">Toca un número para marcarlo como vendido</div>
 
 <div class="product-section">
@@ -327,7 +303,7 @@
 </div>
 
 <div class="footer-actions">
-  <button class="secondary" id="printBtn">Imprimir grilla</button>
+  <button class="secondary" id="downloadImageBtn">Descargar imagen (PNG)</button>
   <button class="secondary" id="exportBtn">Exportar backup</button>
   <button class="secondary" id="importBtn">Importar backup</button>
   <button class="danger" id="resetBtn">Reiniciar todo</button>
@@ -375,7 +351,6 @@
   const searchBox = document.getElementById('searchBox');
   const priceInput = document.getElementById('priceInput');
   const raffleTitle = document.getElementById('raffleTitle');
-  const printTitle = document.getElementById('printTitle');
   const statSold = document.getElementById('statSold');
   const statAvailable = document.getElementById('statAvailable');
   const statTotal = document.getElementById('statTotal');
@@ -383,7 +358,7 @@
   const importBtn = document.getElementById('importBtn');
   const importFile = document.getElementById('importFile');
   const resetBtn = document.getElementById('resetBtn');
-  const printBtn = document.getElementById('printBtn');
+  const downloadImageBtn = document.getElementById('downloadImageBtn');
   const productImage = document.getElementById('productImage');
   const imageBtn = document.getElementById('imageBtn');
   const removeImageBtn = document.getElementById('removeImageBtn');
@@ -510,12 +485,143 @@
 
   raffleTitle.addEventListener('input', () => {
     localStorage.setItem(TITLE_KEY, raffleTitle.value);
-    printTitle.textContent = raffleTitle.value;
   });
 
-  printBtn.addEventListener('click', () => {
-    window.print();
+  downloadImageBtn.addEventListener('click', () => {
+    buildPosterCanvas().then(canvas => {
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (raffleTitle.value.trim() || 'rifa').replace(/\s+/g, '_') + '-grilla.png';
+      a.click();
+    }).catch(() => {
+      alert('No se pudo generar la imagen.');
+    });
   });
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function buildPosterCanvas() {
+    return new Promise((resolve) => {
+      const width = 900;
+      const padding = 36;
+      const gap = 6;
+      const cols = 10;
+      const cellSize = Math.floor((width - padding * 2 - gap * (cols - 1)) / cols);
+      const gridSize = cellSize * cols + gap * (cols - 1);
+      const gridX = Math.round((width - gridSize) / 2);
+
+      const title = raffleTitle.value.trim() || 'Rifa';
+      const titleFontSize = 40;
+      const titleHeight = titleFontSize + 24;
+
+      const savedImage = localStorage.getItem(IMAGE_KEY);
+
+      function finish(imgEl) {
+        const maxImgW = Math.min(500, width - padding * 2);
+        const maxImgH = 320;
+        let imgDrawW = 0, imgDrawH = 0, imgBoxHeight = 0;
+        if (imgEl) {
+          const ratio = Math.min(maxImgW / imgEl.width, maxImgH / imgEl.height, 1);
+          imgDrawW = Math.round(imgEl.width * ratio);
+          imgDrawH = Math.round(imgEl.height * ratio);
+          imgBoxHeight = imgDrawH + 30;
+        }
+        const legendHeight = 40;
+        const height = padding + titleHeight + imgBoxHeight + gridSize + legendHeight + padding;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        let y = padding;
+
+        ctx.fillStyle = '#111111';
+        ctx.font = 'bold ' + titleFontSize + 'px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(title, width / 2, y);
+        y += titleHeight;
+
+        if (imgEl) {
+          const imgX = Math.round((width - imgDrawW) / 2);
+          ctx.save();
+          roundRectPath(ctx, imgX, y, imgDrawW, imgDrawH, 12);
+          ctx.clip();
+          ctx.drawImage(imgEl, imgX, y, imgDrawW, imgDrawH);
+          ctx.restore();
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2;
+          roundRectPath(ctx, imgX, y, imgDrawW, imgDrawH, 12);
+          ctx.stroke();
+          y += imgBoxHeight;
+        }
+
+        for (let i = 0; i <= 99; i++) {
+          const num = pad(i);
+          const row = Math.floor(i / cols);
+          const col = i % cols;
+          const cx = gridX + col * (cellSize + gap);
+          const cy = y + row * (cellSize + gap);
+          const entry = data[num];
+          ctx.fillStyle = entry ? '#16a34a' : '#ffffff';
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1.5;
+          roundRectPath(ctx, cx, cy, cellSize, cellSize, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = entry ? '#ffffff' : '#111111';
+          ctx.font = 'bold ' + Math.round(cellSize * 0.34) + 'px Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(num, cx + cellSize / 2, cy + cellSize / 2 + 1);
+        }
+        y += gridSize + 20;
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = '16px Arial, sans-serif';
+        let lx = gridX;
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1.5;
+        roundRectPath(ctx, lx, y - 8, 16, 16, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#111111';
+        ctx.fillText('Disponible', lx + 24, y);
+        lx += 140;
+        ctx.fillStyle = '#16a34a';
+        roundRectPath(ctx, lx, y - 8, 16, 16, 4);
+        ctx.fill();
+        ctx.fillStyle = '#111111';
+        ctx.fillText('Vendido', lx + 24, y);
+
+        resolve(canvas);
+      }
+
+      if (savedImage) {
+        const img = new Image();
+        img.onload = () => finish(img);
+        img.onerror = () => finish(null);
+        img.src = savedImage;
+      } else {
+        finish(null);
+      }
+    });
+  }
 
   imageBtn.addEventListener('click', () => imageInput.click());
 
@@ -646,7 +752,6 @@
   function init() {
     const savedTitle = localStorage.getItem(TITLE_KEY);
     if (savedTitle) raffleTitle.value = savedTitle;
-    printTitle.textContent = raffleTitle.value;
     const savedPrice = localStorage.getItem(PRICE_KEY);
     if (savedPrice) priceInput.value = savedPrice;
     const savedImage = localStorage.getItem(IMAGE_KEY);
