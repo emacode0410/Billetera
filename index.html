@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rifa">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f172a">
 <title>Rifa - Grilla 00 al 99</title>
 <style>
   :root {
@@ -98,6 +103,7 @@
     gap: 6px;
   }
   .cell {
+    position: relative;
     aspect-ratio: 1 / 1;
     display: flex;
     align-items: center;
@@ -109,16 +115,31 @@
     font-size: clamp(0.7rem, 2.6vw, 1rem);
     cursor: pointer;
     user-select: none;
-    transition: transform 0.05s ease, background 0.15s ease;
+    transition: transform 0.05s ease, border-color 0.15s ease;
     color: var(--text);
   }
   .cell:active {
     transform: scale(0.93);
   }
+  .cell .cell-num {
+    position: relative;
+    z-index: 1;
+  }
+  .cell .sold-badge {
+    display: none;
+  }
   .cell.sold {
-    background: var(--sold);
     border-color: var(--sold);
-    color: var(--sold-text);
+    border-width: 2px;
+  }
+  .cell.sold .sold-badge {
+    display: block;
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 46%;
+    height: 46%;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));
   }
   .cell.match {
     outline: 3px solid #f59e0b;
@@ -229,10 +250,14 @@
     display: inline-block;
   }
   .swatch.available { background: var(--available); border: 1px solid var(--available-border); }
-  .swatch.sold { background: var(--sold); }
+  .legend-paddle {
+    width: 16px;
+    height: 16px;
+  }
   #raffleTitle {
     background: transparent;
     border: none;
+    border-bottom: 1px dashed var(--border);
     color: var(--text);
     text-align: center;
     font-size: 1.3rem;
@@ -241,11 +266,41 @@
     max-width: 400px;
     display: block;
     margin: 0 auto;
+    padding-bottom: 4px;
   }
   #raffleTitle:focus {
-    outline: 1px dashed var(--border);
+    outline: none;
+    border-bottom-color: var(--accent);
   }
   .hidden { display: none !important; }
+  .backup-banner {
+    max-width: 640px;
+    margin: 0 auto 16px auto;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    font-size: 0.8rem;
+  }
+  .backup-banner p {
+    margin: 0;
+    color: var(--text);
+    flex: 1;
+    min-width: 180px;
+  }
+  .backup-banner .backup-banner-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .backup-banner button {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
   .product-section {
     max-width: 640px;
     margin: 0 auto 16px auto;
@@ -275,6 +330,14 @@
 <input id="raffleTitle" type="text" value="Mi Rifa" spellcheck="false">
 <div class="subtitle">Toca un número para marcarlo como vendido</div>
 
+<div class="backup-banner hidden" id="backupBanner">
+  <p>Recordá exportar un backup para no perder tus datos.</p>
+  <div class="backup-banner-actions">
+    <button id="backupBannerExport">Exportar ahora</button>
+    <button class="secondary" id="backupBannerDismiss">Ahora no</button>
+  </div>
+</div>
+
 <div class="product-section">
   <img id="productImage" class="product-image hidden" alt="Imagen del premio">
   <div class="product-actions">
@@ -299,7 +362,7 @@
 
 <div class="legend">
   <span><span class="swatch available"></span> Disponible</span>
-  <span><span class="swatch sold"></span> Vendido</span>
+  <span><svg class="legend-paddle" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="13" rx="6.5" fill="#16a34a" stroke="#0b3d23" stroke-width="1"/><rect x="10.5" y="14" width="3" height="8" rx="1.5" fill="#16a34a" stroke="#0b3d23" stroke-width="1"/></svg> Vendido</span>
 </div>
 
 <div class="footer-actions">
@@ -338,6 +401,12 @@
   const TITLE_KEY = 'rifa_title_v1';
   const PRICE_KEY = 'rifa_price_v1';
   const IMAGE_KEY = 'rifa_image_v1';
+  const LAST_BACKUP_KEY = 'rifa_last_backup_v1';
+  const BACKUP_SNOOZE_KEY = 'rifa_backup_snooze_v1';
+  const PADDLE_SVG = '<svg class="sold-badge" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<rect x="5" y="2" width="14" height="13" rx="6.5" fill="#16a34a" stroke="#0b3d23" stroke-width="1"/>' +
+    '<rect x="10.5" y="14" width="3" height="8" rx="1.5" fill="#16a34a" stroke="#0b3d23" stroke-width="1"/>' +
+    '</svg>';
 
   const grid = document.getElementById('grid');
   const overlay = document.getElementById('overlay');
@@ -363,6 +432,9 @@
   const imageBtn = document.getElementById('imageBtn');
   const removeImageBtn = document.getElementById('removeImageBtn');
   const imageInput = document.getElementById('imageInput');
+  const backupBanner = document.getElementById('backupBanner');
+  const backupBannerExport = document.getElementById('backupBannerExport');
+  const backupBannerDismiss = document.getElementById('backupBannerDismiss');
 
   let data = loadData();
   let currentNumber = null;
@@ -391,7 +463,7 @@
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.number = num;
-      cell.textContent = num;
+      cell.innerHTML = '<span class="cell-num">' + num + '</span>' + PADDLE_SVG;
       cell.addEventListener('click', () => openModal(num));
       grid.appendChild(cell);
     }
@@ -404,7 +476,6 @@
       const num = cell.dataset.number;
       const entry = data[num];
       cell.classList.toggle('sold', !!entry);
-      cell.textContent = num;
 
       if (query) {
         const matches = num.includes(query) ||
@@ -425,6 +496,21 @@
     statSold.textContent = soldCount;
     statAvailable.textContent = 100 - soldCount;
     statTotal.textContent = '$' + (soldCount * price).toLocaleString('es-UY');
+    updateBackupBanner(soldCount);
+  }
+
+  function updateBackupBanner(soldCount) {
+    if (soldCount === 0) {
+      backupBanner.classList.add('hidden');
+      return;
+    }
+    const lastBackup = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0', 10);
+    const snoozeUntil = parseInt(localStorage.getItem(BACKUP_SNOOZE_KEY) || '0', 10);
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const needsBackup = (now - lastBackup) > dayMs;
+    const snoozed = now < snoozeUntil;
+    backupBanner.classList.toggle('hidden', !(needsBackup && !snoozed));
   }
 
   function openModal(num) {
@@ -509,6 +595,26 @@
     ctx.closePath();
   }
 
+  function drawPaddle(ctx, x, y, size, color) {
+    const headW = size * 0.62;
+    const headH = size * 0.56;
+    const headX = x + (size - headW) / 2;
+    const headY = y;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#0b3d23';
+    ctx.lineWidth = Math.max(1, size * 0.05);
+    roundRectPath(ctx, headX, headY, headW, headH, headH / 2);
+    ctx.fill();
+    ctx.stroke();
+    const handleW = size * 0.16;
+    const handleH = size * 0.36;
+    const handleX = x + (size - handleW) / 2;
+    const handleY = headY + headH - size * 0.06;
+    roundRectPath(ctx, handleX, handleY, handleW, handleH, handleW / 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
   function buildPosterCanvas() {
     return new Promise((resolve) => {
       const width = 900;
@@ -576,17 +682,21 @@
           const cx = gridX + col * (cellSize + gap);
           const cy = y + row * (cellSize + gap);
           const entry = data[num];
-          ctx.fillStyle = entry ? '#16a34a' : '#ffffff';
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 1.5;
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = entry ? '#16a34a' : '#000000';
+          ctx.lineWidth = entry ? 2.5 : 1.5;
           roundRectPath(ctx, cx, cy, cellSize, cellSize, 6);
           ctx.fill();
           ctx.stroke();
-          ctx.fillStyle = entry ? '#ffffff' : '#111111';
+          ctx.fillStyle = '#111111';
           ctx.font = 'bold ' + Math.round(cellSize * 0.34) + 'px Arial, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(num, cx + cellSize / 2, cy + cellSize / 2 + 1);
+          if (entry) {
+            const badgeSize = cellSize * 0.5;
+            drawPaddle(ctx, cx + cellSize - badgeSize - 1, cy + 1, badgeSize, '#16a34a');
+          }
         }
         y += gridSize + 20;
 
@@ -603,9 +713,7 @@
         ctx.fillStyle = '#111111';
         ctx.fillText('Disponible', lx + 24, y);
         lx += 140;
-        ctx.fillStyle = '#16a34a';
-        roundRectPath(ctx, lx, y - 8, 16, 16, 4);
-        ctx.fill();
+        drawPaddle(ctx, lx, y - 10, 20, '#16a34a');
         ctx.fillStyle = '#111111';
         ctx.fillText('Vendido', lx + 24, y);
 
@@ -689,7 +797,7 @@
     removeImageBtn.classList.add('hidden');
   }
 
-  exportBtn.addEventListener('click', () => {
+  function exportBackup() {
     const backup = {
       title: raffleTitle.value,
       price: priceInput.value,
@@ -704,6 +812,17 @@
     a.download = 'rifa-backup-' + new Date().toISOString().slice(0, 10) + '.json';
     a.click();
     URL.revokeObjectURL(url);
+    localStorage.setItem(LAST_BACKUP_KEY, String(Date.now()));
+    updateBackupBanner(Object.keys(data).length);
+  }
+
+  exportBtn.addEventListener('click', exportBackup);
+
+  backupBannerExport.addEventListener('click', exportBackup);
+
+  backupBannerDismiss.addEventListener('click', () => {
+    localStorage.setItem(BACKUP_SNOOZE_KEY, String(Date.now() + 12 * 60 * 60 * 1000));
+    backupBanner.classList.add('hidden');
   });
 
   importBtn.addEventListener('click', () => importFile.click());
