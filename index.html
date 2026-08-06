@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Rifa - Grilla 00 al 99</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #273449;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --available: #1e293b;
+    --available-border: #475569;
+    --sold: #16a34a;
+    --sold-text: #ecfdf5;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+  h1 {
+    font-size: 1.3rem;
+    margin: 0 0 4px 0;
+    text-align: center;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+  .toolbar {
+    max-width: 720px;
+    margin: 0 auto 16px auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+  .toolbar input[type="text"], .toolbar input[type="number"] {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .toolbar label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stats {
+    max-width: 720px;
+    margin: 0 auto 16px auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 90px;
+  }
+  .stat-card .value {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .stat-card .label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .grid {
+    max-width: 640px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+  }
+  .cell {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--available);
+    border: 1px solid var(--available-border);
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: clamp(0.7rem, 2.6vw, 1rem);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.05s ease, background 0.15s ease;
+    color: var(--text);
+  }
+  .cell:active {
+    transform: scale(0.93);
+  }
+  .cell.sold {
+    background: var(--sold);
+    border-color: var(--sold);
+    color: var(--sold-text);
+  }
+  .cell.match {
+    outline: 3px solid #f59e0b;
+    outline-offset: -3px;
+  }
+  .cell.dimmed {
+    opacity: 0.25;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--accent);
+    color: white;
+  }
+  button:hover { background: var(--accent-hover); }
+  button.secondary {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.secondary:hover { background: var(--border); }
+  button.danger { background: var(--danger); }
+  button.danger:hover { background: var(--danger-hover); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 50;
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .modal h2 {
+    margin: 0 0 4px 0;
+    font-size: 1.4rem;
+  }
+  .modal .modal-sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+  .field {
+    margin-bottom: 12px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .modal-actions button { flex: 1; }
+  .footer-actions {
+    max-width: 720px;
+    margin: 24px auto 0 auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend {
+    max-width: 640px;
+    margin: 12px auto 0 auto;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .swatch.available { background: var(--available); border: 1px solid var(--available-border); }
+  .swatch.sold { background: var(--sold); }
+  #raffleTitle {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    width: 100%;
+    max-width: 400px;
+    display: block;
+    margin: 0 auto;
+  }
+  #raffleTitle:focus {
+    outline: 1px dashed var(--border);
+  }
+</style>
+</head>
+<body>
+
+<input id="raffleTitle" type="text" value="Mi Rifa" spellcheck="false">
+<div class="subtitle">Toca un número para marcarlo como vendido</div>
+
+<div class="toolbar">
+  <input id="searchBox" type="text" placeholder="Buscar por nombre, número o referencia...">
+  <label>Precio por número: $ <input id="priceInput" type="number" min="0" step="1" style="width:80px"></label>
+</div>
+
+<div class="stats">
+  <div class="stat-card"><div class="value" id="statSold">0</div><div class="label">Vendidos</div></div>
+  <div class="stat-card"><div class="value" id="statAvailable">100</div><div class="label">Disponibles</div></div>
+  <div class="stat-card"><div class="value" id="statTotal">$0</div><div class="label">Recaudado</div></div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="legend">
+  <span><span class="swatch available"></span> Disponible</span>
+  <span><span class="swatch sold"></span> Vendido</span>
+</div>
+
+<div class="footer-actions">
+  <button class="secondary" id="exportBtn">Exportar backup</button>
+  <button class="secondary" id="importBtn">Importar backup</button>
+  <button class="danger" id="resetBtn">Reiniciar todo</button>
+</div>
+<input type="file" id="importFile" accept="application/json" style="display:none">
+
+<div class="overlay hidden" id="overlay">
+  <div class="modal">
+    <h2 id="modalNumber">00</h2>
+    <div class="modal-sub" id="modalSub">Cargar datos del comprador</div>
+
+    <div class="field">
+      <label for="buyerName">Nombre del comprador</label>
+      <input id="buyerName" type="text" placeholder="Ej: Juan Pérez">
+    </div>
+    <div class="field">
+      <label for="buyerRef">Referencia (celular o Instagram)</label>
+      <input id="buyerRef" type="text" placeholder="Ej: 099123456 o @juanperez">
+    </div>
+
+    <div class="modal-actions">
+      <button class="secondary" id="cancelBtn">Cancelar</button>
+      <button class="danger" id="clearBtn">Quitar</button>
+      <button id="saveBtn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'rifa_data_v1';
+  const TITLE_KEY = 'rifa_title_v1';
+  const PRICE_KEY = 'rifa_price_v1';
+
+  const grid = document.getElementById('grid');
+  const overlay = document.getElementById('overlay');
+  const modalNumber = document.getElementById('modalNumber');
+  const modalSub = document.getElementById('modalSub');
+  const buyerName = document.getElementById('buyerName');
+  const buyerRef = document.getElementById('buyerRef');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const searchBox = document.getElementById('searchBox');
+  const priceInput = document.getElementById('priceInput');
+  const raffleTitle = document.getElementById('raffleTitle');
+  const statSold = document.getElementById('statSold');
+  const statAvailable = document.getElementById('statAvailable');
+  const statTotal = document.getElementById('statTotal');
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const importFile = document.getElementById('importFile');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let data = loadData();
+  let currentNumber = null;
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function pad(n) {
+    return n.toString().padStart(2, '0');
+  }
+
+  function buildGrid() {
+    grid.innerHTML = '';
+    for (let i = 0; i <= 99; i++) {
+      const num = pad(i);
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.number = num;
+      cell.textContent = num;
+      cell.addEventListener('click', () => openModal(num));
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderGrid() {
+    const cells = grid.querySelectorAll('.cell');
+    const query = searchBox.value.trim().toLowerCase();
+    cells.forEach(cell => {
+      const num = cell.dataset.number;
+      const entry = data[num];
+      cell.classList.toggle('sold', !!entry);
+      cell.textContent = num;
+
+      if (query) {
+        const matches = num.includes(query) ||
+          (entry && ((entry.name || '').toLowerCase().includes(query) ||
+                     (entry.ref || '').toLowerCase().includes(query)));
+        cell.classList.toggle('match', !!matches);
+        cell.classList.toggle('dimmed', !matches);
+      } else {
+        cell.classList.remove('match', 'dimmed');
+      }
+    });
+    updateStats();
+  }
+
+  function updateStats() {
+    const soldCount = Object.keys(data).length;
+    const price = parseFloat(priceInput.value) || 0;
+    statSold.textContent = soldCount;
+    statAvailable.textContent = 100 - soldCount;
+    statTotal.textContent = '$' + (soldCount * price).toLocaleString('es-UY');
+  }
+
+  function openModal(num) {
+    currentNumber = num;
+    const entry = data[num];
+    modalNumber.textContent = num;
+    modalSub.textContent = entry ? 'Editar datos del comprador' : 'Cargar datos del comprador';
+    buyerName.value = entry ? entry.name || '' : '';
+    buyerRef.value = entry ? entry.ref || '' : '';
+    clearBtn.style.display = entry ? 'block' : 'none';
+    overlay.classList.remove('hidden');
+    setTimeout(() => buyerName.focus(), 50);
+  }
+
+  function closeModal() {
+    overlay.classList.add('hidden');
+    currentNumber = null;
+  }
+
+  saveBtn.addEventListener('click', () => {
+    if (currentNumber === null) return;
+    const name = buyerName.value.trim();
+    const ref = buyerRef.value.trim();
+    if (!name) {
+      buyerName.focus();
+      return;
+    }
+    data[currentNumber] = { name, ref };
+    saveData();
+    renderGrid();
+    closeModal();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (currentNumber === null) return;
+    if (confirm('¿Quitar la venta del número ' + currentNumber + '?')) {
+      delete data[currentNumber];
+      saveData();
+      renderGrid();
+      closeModal();
+    }
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.classList.contains('hidden')) closeModal();
+  });
+
+  searchBox.addEventListener('input', renderGrid);
+
+  priceInput.addEventListener('input', () => {
+    localStorage.setItem(PRICE_KEY, priceInput.value);
+    updateStats();
+  });
+
+  raffleTitle.addEventListener('input', () => {
+    localStorage.setItem(TITLE_KEY, raffleTitle.value);
+  });
+
+  exportBtn.addEventListener('click', () => {
+    const backup = {
+      title: raffleTitle.value,
+      price: priceInput.value,
+      data: data,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rifa-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  importBtn.addEventListener('click', () => importFile.click());
+
+  importFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const backup = JSON.parse(reader.result);
+        if (backup.data) {
+          data = backup.data;
+          saveData();
+        }
+        if (backup.title) {
+          raffleTitle.value = backup.title;
+          localStorage.setItem(TITLE_KEY, backup.title);
+        }
+        if (backup.price !== undefined) {
+          priceInput.value = backup.price;
+          localStorage.setItem(PRICE_KEY, backup.price);
+        }
+        renderGrid();
+        alert('Backup importado correctamente.');
+      } catch (err) {
+        alert('El archivo no es un backup válido.');
+      }
+      importFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (confirm('Esto borrará TODAS las ventas cargadas. ¿Seguro que querés continuar?')) {
+      data = {};
+      saveData();
+      renderGrid();
+    }
+  });
+
+  function init() {
+    const savedTitle = localStorage.getItem(TITLE_KEY);
+    if (savedTitle) raffleTitle.value = savedTitle;
+    const savedPrice = localStorage.getItem(PRICE_KEY);
+    if (savedPrice) priceInput.value = savedPrice;
+    buildGrid();
+    renderGrid();
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
