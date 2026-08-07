@@ -25,6 +25,10 @@
     --accent-hover: #4f46e5;
     --danger: #dc2626;
     --danger-hover: #b91c1c;
+    --gold: #f59e0b;
+    --gold-hover: #d97706;
+    --teal: #14b8a6;
+    --teal-hover: #0d9488;
   }
   * { box-sizing: border-box; }
   body {
@@ -80,11 +84,18 @@
   .stat-card {
     background: var(--panel);
     border: 1px solid var(--border);
+    border-top: 3px solid var(--border);
     border-radius: 10px;
     padding: 8px 14px;
     text-align: center;
     min-width: 90px;
   }
+  .stat-card.stat-sold { border-top-color: var(--sold); }
+  .stat-card.stat-sold .value { color: var(--sold); }
+  .stat-card.stat-available { border-top-color: var(--teal); }
+  .stat-card.stat-available .value { color: var(--teal); }
+  .stat-card.stat-total { border-top-color: var(--gold); }
+  .stat-card.stat-total .value { color: var(--gold); }
   .stat-card .value {
     font-size: 1.2rem;
     font-weight: 700;
@@ -165,6 +176,10 @@
     border: 1px solid var(--border);
   }
   button.secondary:hover { background: var(--border); }
+  button.secondary.accent-gold { border-color: var(--gold); color: var(--gold); }
+  button.secondary.accent-gold:hover { background: rgba(245,158,11,0.15); }
+  button.secondary.accent-teal { border-color: var(--teal); color: var(--teal); }
+  button.secondary.accent-teal:hover { background: rgba(20,184,166,0.15); }
   button.danger { background: var(--danger); }
   button.danger:hover { background: var(--danger-hover); }
 
@@ -278,6 +293,7 @@
     margin: 0 auto 16px auto;
     background: var(--panel-2);
     border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
     border-radius: 10px;
     padding: 10px 14px;
     display: flex;
@@ -412,9 +428,9 @@
 </div>
 
 <div class="stats">
-  <div class="stat-card"><div class="value" id="statSold">0</div><div class="label">Vendidos</div></div>
-  <div class="stat-card"><div class="value" id="statAvailable">100</div><div class="label">Disponibles</div></div>
-  <div class="stat-card"><div class="value" id="statTotal">$0</div><div class="label">Recaudado</div></div>
+  <div class="stat-card stat-sold"><div class="value" id="statSold">0</div><div class="label">Vendidos</div></div>
+  <div class="stat-card stat-available"><div class="value" id="statAvailable">100</div><div class="label">Disponibles</div></div>
+  <div class="stat-card stat-total"><div class="value" id="statTotal">$0</div><div class="label">Recaudado</div></div>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -425,9 +441,9 @@
 </div>
 
 <div class="footer-actions">
-  <button class="secondary" id="downloadImageBtn">Descargar imagen (PNG)</button>
-  <button class="secondary" id="exportBtn">Exportar backup</button>
-  <button class="secondary" id="importBtn">Importar backup</button>
+  <button class="secondary accent-gold" id="downloadImageBtn">Descargar imagen (PNG)</button>
+  <button class="secondary accent-teal" id="exportBtn">Exportar backup</button>
+  <button class="secondary accent-teal" id="importBtn">Importar backup</button>
   <button class="danger" id="resetBtn">Reiniciar todo</button>
 </div>
 <input type="file" id="importFile" accept="application/json" style="display:none">
@@ -734,8 +750,9 @@
     const gridX = Math.round((width - gridSize) / 2);
 
     const title = raffleTitle.value.trim() || 'Rifa';
-    const tagline = '¡Ayudá y ganá grandes premios!';
+    const tagline = '¡Participá y ganá grandes premios!';
     const alias = aliasInput.value.trim();
+    const price = parseFloat(priceInput.value) || 0;
     const titleFontSize = 40;
     const titleHeight = titleFontSize + 10;
     const taglineFontSize = 20;
@@ -769,12 +786,13 @@
       }
 
       const legendHeight = 40;
+      const priceHeight = price > 0 ? 34 : 0;
       const aliasHeight = alias ? 34 : 0;
       const warningHeight = 56;
       const sponsorsHeight = (femakImg || zpImg) ? 100 : 0;
 
       const height = padding + titleHeight + taglineHeight + imgBoxHeight + gridSize +
-        legendHeight + aliasHeight + warningHeight + sponsorsHeight + padding;
+        legendHeight + priceHeight + aliasHeight + warningHeight + sponsorsHeight + padding;
 
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -856,6 +874,14 @@
       ctx.fillStyle = '#111111';
       ctx.fillText('Vendido', lx + 24, y);
       y += legendHeight;
+
+      if (price > 0) {
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillStyle = '#111111';
+        ctx.fillText('Precio por número: $' + price.toLocaleString('es-UY'), width / 2, y);
+        y += priceHeight;
+      }
 
       if (alias) {
         ctx.textAlign = 'center';
