@@ -853,14 +853,14 @@
       const ctx = canvas.getContext('2d');
 
       const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-      bgGrad.addColorStop(0, '#f0fdfa');
-      bgGrad.addColorStop(1, '#fffbeb');
+      bgGrad.addColorStop(0, '#04070d');
+      bgGrad.addColorStop(1, '#0b1c33');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
       const headerGrad = ctx.createLinearGradient(0, 0, width, 0);
-      headerGrad.addColorStop(0, '#0d9488');
-      headerGrad.addColorStop(1, '#16a34a');
+      headerGrad.addColorStop(0, '#12294d');
+      headerGrad.addColorStop(1, '#3d78b5');
       ctx.fillStyle = headerGrad;
       ctx.fillRect(0, 0, width, headerBandHeight);
 
@@ -873,7 +873,7 @@
       ctx.fillText(title, width / 2, y);
       y += titleHeight;
 
-      ctx.fillStyle = '#fef9c3';
+      ctx.fillStyle = '#fbbf24';
       ctx.font = 'bold ' + taglineFontSize + 'px Arial, sans-serif';
       ctx.fillText(tagline, width / 2, y);
       y += taglineHeight;
@@ -886,7 +886,7 @@
           ctx.clip();
           ctx.drawImage(d.img, d.x, dy, d.w, d.h);
           ctx.restore();
-          ctx.strokeStyle = '#000000';
+          ctx.strokeStyle = '#f1f5f9';
           ctx.lineWidth = 2;
           roundRectPath(ctx, d.x, dy, d.w, d.h, 10);
           ctx.stroke();
@@ -929,18 +929,18 @@
       roundRectPath(ctx, lx, y - 8, 16, 16, 4);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = '#111111';
+      ctx.fillStyle = '#f1f5f9';
       ctx.fillText('Disponible', lx + 24, y);
       lx += 140;
       drawBall(ctx, lx, y - 10, 20, '#d7e600');
-      ctx.fillStyle = '#111111';
+      ctx.fillStyle = '#f1f5f9';
       ctx.fillText('Vendido', lx + 24, y);
       y += legendHeight;
 
       if (price > 0) {
         ctx.textAlign = 'center';
         ctx.font = 'bold 18px Arial, sans-serif';
-        ctx.fillStyle = '#111111';
+        ctx.fillStyle = '#f1f5f9';
         ctx.fillText('Precio por número: $' + price.toLocaleString('es-UY'), width / 2, y);
         y += priceHeight;
       }
@@ -948,7 +948,7 @@
       if (alias) {
         ctx.textAlign = 'center';
         ctx.font = 'bold 18px Arial, sans-serif';
-        ctx.fillStyle = '#111111';
+        ctx.fillStyle = '#f1f5f9';
         ctx.fillText('Alias para transferencias: ' + alias, width / 2, y);
         y += aliasHeight;
       }
@@ -976,7 +976,7 @@
         const igStartX = (width - igTotalWidth) / 2;
         const igCenterY = y + igHeight / 2;
         drawInstagramIcon(ctx, igStartX, igCenterY - igIconSize / 2, igIconSize);
-        ctx.fillStyle = '#111111';
+        ctx.fillStyle = '#f1f5f9';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(igText, igStartX + igIconSize + 8, igCenterY);
@@ -987,7 +987,7 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.font = '12px Arial, sans-serif';
-        ctx.fillStyle = '#6b7280';
+        ctx.fillStyle = '#94a3b8';
         ctx.fillText('AUSPICIAN', width / 2, y);
         y += 22;
         const logos = [femakImg, zpImg].filter(Boolean);
@@ -1003,7 +1003,7 @@
         });
       }
 
-      ctx.strokeStyle = '#0d9488';
+      ctx.strokeStyle = '#3d78b5';
       ctx.lineWidth = 6;
       ctx.strokeRect(3, 3, width - 6, height - 6);
 
