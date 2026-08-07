@@ -375,6 +375,21 @@
     margin: 24px auto 0 auto;
     text-align: center;
   }
+  .ig-contact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+  }
+  .ig-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
   .sponsors-label {
     font-size: 0.68rem;
     color: var(--muted);
@@ -386,12 +401,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     flex-wrap: wrap;
   }
   .sponsor-logo {
-    max-height: 44px;
-    max-width: 130px;
+    max-height: 68px;
+    max-width: 180px;
     object-fit: contain;
     border-radius: 8px;
     background: #ffffff;
@@ -449,6 +464,22 @@
 <input type="file" id="importFile" accept="application/json" style="display:none">
 
 <div class="sponsors">
+  <div class="ig-contact">
+    <svg class="ig-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <defs>
+        <linearGradient id="igGradApp" x1="0" y1="24" x2="24" y2="0">
+          <stop offset="0%" stop-color="#feda75"/>
+          <stop offset="30%" stop-color="#fa7e1e"/>
+          <stop offset="60%" stop-color="#d62976"/>
+          <stop offset="100%" stop-color="#962fbf"/>
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="20" height="20" rx="6" fill="none" stroke="url(#igGradApp)" stroke-width="2"/>
+      <circle cx="12" cy="12" r="5" fill="none" stroke="url(#igGradApp)" stroke-width="2"/>
+      <circle cx="17.5" cy="6.5" r="1.2" fill="url(#igGradApp)"/>
+    </svg>
+    <span>@codeluppi.padel</span>
+  </div>
   <div class="sponsors-label">Auspician</div>
   <div class="sponsors-logos">
     <img class="sponsor-logo" id="sponsorFemak" alt="Femak">
@@ -730,6 +761,26 @@
     ctx.stroke();
   }
 
+  function drawInstagramIcon(ctx, x, y, size) {
+    const grad = ctx.createLinearGradient(x, y + size, x + size, y);
+    grad.addColorStop(0, '#feda75');
+    grad.addColorStop(0.3, '#fa7e1e');
+    grad.addColorStop(0.6, '#d62976');
+    grad.addColorStop(1, '#962fbf');
+    const lw = size * 0.09;
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = lw;
+    roundRectPath(ctx, x + lw / 2, y + lw / 2, size - lw, size - lw, size * 0.28);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size * 0.22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x + size * 0.74, y + size * 0.24, size * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   function loadImageEl(src) {
     return new Promise((resolve) => {
       if (!src) { resolve(null); return; }
@@ -756,7 +807,8 @@
     const titleFontSize = 40;
     const titleHeight = titleFontSize + 10;
     const taglineFontSize = 20;
-    const taglineHeight = taglineFontSize + 22;
+    const taglineHeight = taglineFontSize + 38;
+    const headerBandHeight = padding + titleHeight + taglineHeight;
 
     return Promise.all([
       Promise.all(productImageList.map(loadImageEl)),
@@ -789,29 +841,39 @@
       const priceHeight = price > 0 ? 34 : 0;
       const aliasHeight = alias ? 34 : 0;
       const warningHeight = 56;
+      const igHeight = 46;
       const sponsorsHeight = (femakImg || zpImg) ? 100 : 0;
 
       const height = padding + titleHeight + taglineHeight + imgBoxHeight + gridSize +
-        legendHeight + priceHeight + aliasHeight + warningHeight + sponsorsHeight + padding;
+        legendHeight + priceHeight + aliasHeight + warningHeight + igHeight + sponsorsHeight + padding;
 
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = '#ffffff';
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+      bgGrad.addColorStop(0, '#f0fdfa');
+      bgGrad.addColorStop(1, '#fffbeb');
+      ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
+
+      const headerGrad = ctx.createLinearGradient(0, 0, width, 0);
+      headerGrad.addColorStop(0, '#0d9488');
+      headerGrad.addColorStop(1, '#16a34a');
+      ctx.fillStyle = headerGrad;
+      ctx.fillRect(0, 0, width, headerBandHeight);
 
       let y = padding;
 
-      ctx.fillStyle = '#111111';
+      ctx.fillStyle = '#ffffff';
       ctx.font = 'bold ' + titleFontSize + 'px Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.fillText(title, width / 2, y);
       y += titleHeight;
 
-      ctx.fillStyle = '#16a34a';
+      ctx.fillStyle = '#fef9c3';
       ctx.font = 'bold ' + taglineFontSize + 'px Arial, sans-serif';
       ctx.fillText(tagline, width / 2, y);
       y += taglineHeight;
@@ -905,6 +967,22 @@
       ctx.fillText('⚠ IMPORTANTE: antes de transferir, consultá que el número esté disponible', width / 2, y + boxH / 2);
       y += warningHeight;
 
+      {
+        const igIconSize = 26;
+        const igText = '@codeluppi.padel';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        const igTextWidth = ctx.measureText(igText).width;
+        const igTotalWidth = igIconSize + 8 + igTextWidth;
+        const igStartX = (width - igTotalWidth) / 2;
+        const igCenterY = y + igHeight / 2;
+        drawInstagramIcon(ctx, igStartX, igCenterY - igIconSize / 2, igIconSize);
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(igText, igStartX + igIconSize + 8, igCenterY);
+        y += igHeight;
+      }
+
       if (femakImg || zpImg) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
@@ -913,8 +991,8 @@
         ctx.fillText('AUSPICIAN', width / 2, y);
         y += 22;
         const logos = [femakImg, zpImg].filter(Boolean);
-        const logoH = 46;
-        const gapLogo = 30;
+        const logoH = 70;
+        const gapLogo = 34;
         const widths = logos.map(im => logoH * (im.width / im.height));
         const totalW = widths.reduce((a, b) => a + b, 0) + gapLogo * (logos.length - 1);
         let sx = (width - totalW) / 2;
@@ -924,6 +1002,10 @@
           sx += w + gapLogo;
         });
       }
+
+      ctx.strokeStyle = '#0d9488';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(3, 3, width - 6, height - 6);
 
       return canvas;
     });
