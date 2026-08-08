@@ -21,6 +21,8 @@
     --available-border: #475569;
     --sold: #16a34a;
     --sold-text: #ecfdf5;
+    --reserved: #ec4899;
+    --reserved-hover: #db2777;
     --accent: #6366f1;
     --accent-hover: #4f46e5;
     --danger: #dc2626;
@@ -96,6 +98,8 @@
   .stat-card.stat-available .value { color: var(--teal); }
   .stat-card.stat-total { border-top-color: var(--gold); }
   .stat-card.stat-total .value { color: var(--gold); }
+  .stat-card.stat-reserved { border-top-color: var(--reserved); }
+  .stat-card.stat-reserved .value { color: var(--reserved); }
   .stat-card .value {
     font-size: 1.2rem;
     font-weight: 700;
@@ -136,14 +140,18 @@
     position: relative;
     z-index: 1;
   }
-  .cell .sold-badge {
+  .cell .sold-badge, .cell .reserved-badge {
     display: none;
   }
   .cell.sold {
     border-color: var(--sold);
     border-width: 2px;
   }
-  .cell.sold .sold-badge {
+  .cell.reserved {
+    border-color: var(--reserved);
+    border-width: 2px;
+  }
+  .cell.sold .sold-badge, .cell.reserved .reserved-badge {
     display: block;
     position: absolute;
     top: 1px;
@@ -236,6 +244,32 @@
     flex-wrap: wrap;
   }
   .modal-actions button { flex: 1; }
+  .status-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .status-option {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .status-option.active[data-status="sold"] {
+    background: var(--sold);
+    border-color: var(--sold);
+    color: #ffffff;
+  }
+  .status-option.active[data-status="reserved"] {
+    background: var(--reserved);
+    border-color: var(--reserved);
+    color: #ffffff;
+  }
   .footer-actions {
     max-width: 720px;
     margin: 24px auto 0 auto;
@@ -444,6 +478,7 @@
 
 <div class="stats">
   <div class="stat-card stat-sold"><div class="value" id="statSold">0</div><div class="label">Vendidos</div></div>
+  <div class="stat-card stat-reserved"><div class="value" id="statReserved">0</div><div class="label">Reservados</div></div>
   <div class="stat-card stat-available"><div class="value" id="statAvailable">100</div><div class="label">Disponibles</div></div>
   <div class="stat-card stat-total"><div class="value" id="statTotal">$0</div><div class="label">Recaudado</div></div>
 </div>
@@ -453,6 +488,7 @@
 <div class="legend">
   <span><span class="swatch available"></span> Disponible</span>
   <span><svg class="legend-paddle" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#d7e600" stroke="#6b7a00" stroke-width="1.4"/><path d="M7 4.5 C11 9 11 15 7 19.5" stroke="#6b7a00" stroke-width="1.2" fill="none"/><path d="M17 4.5 C13 9 13 15 17 19.5" stroke="#6b7a00" stroke-width="1.2" fill="none"/></svg> Vendido</span>
+  <span><svg class="legend-paddle" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#f472b6" stroke="#9d174d" stroke-width="1.4"/><path d="M7 4.5 C11 9 11 15 7 19.5" stroke="#9d174d" stroke-width="1.2" fill="none"/><path d="M17 4.5 C13 9 13 15 17 19.5" stroke="#9d174d" stroke-width="1.2" fill="none"/></svg> Reservado</span>
 </div>
 
 <div class="footer-actions">
@@ -492,6 +528,11 @@
     <h2 id="modalNumber">00</h2>
     <div class="modal-sub" id="modalSub">Cargar datos del comprador</div>
 
+    <div class="status-toggle">
+      <button type="button" class="status-option" id="statusSold" data-status="sold">Vendido</button>
+      <button type="button" class="status-option" id="statusReserved" data-status="reserved">Reservado</button>
+    </div>
+
     <div class="field">
       <label for="buyerName">Nombre del comprador</label>
       <input id="buyerName" type="text" placeholder="Ej: Juan Pérez">
@@ -527,6 +568,11 @@
     '<path d="M7 4.5 C11 9 11 15 7 19.5" stroke="#6b7a00" stroke-width="1.2" fill="none"/>' +
     '<path d="M17 4.5 C13 9 13 15 17 19.5" stroke="#6b7a00" stroke-width="1.2" fill="none"/>' +
     '</svg>';
+  const RESERVED_BALL_SVG = '<svg class="reserved-badge" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="9" fill="#f472b6" stroke="#9d174d" stroke-width="1.4"/>' +
+    '<path d="M7 4.5 C11 9 11 15 7 19.5" stroke="#9d174d" stroke-width="1.2" fill="none"/>' +
+    '<path d="M17 4.5 C13 9 13 15 17 19.5" stroke="#9d174d" stroke-width="1.2" fill="none"/>' +
+    '</svg>';
 
   const grid = document.getElementById('grid');
   const overlay = document.getElementById('overlay');
@@ -541,8 +587,11 @@
   const priceInput = document.getElementById('priceInput');
   const raffleTitle = document.getElementById('raffleTitle');
   const statSold = document.getElementById('statSold');
+  const statReserved = document.getElementById('statReserved');
   const statAvailable = document.getElementById('statAvailable');
   const statTotal = document.getElementById('statTotal');
+  const statusSoldBtn = document.getElementById('statusSold');
+  const statusReservedBtn = document.getElementById('statusReserved');
   const exportBtn = document.getElementById('exportBtn');
   const importBtn = document.getElementById('importBtn');
   const importFile = document.getElementById('importFile');
@@ -603,7 +652,7 @@
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.number = num;
-      cell.innerHTML = '<span class="cell-num">' + num + '</span>' + BALL_SVG;
+      cell.innerHTML = '<span class="cell-num">' + num + '</span>' + BALL_SVG + RESERVED_BALL_SVG;
       cell.addEventListener('click', () => openModal(num));
       grid.appendChild(cell);
     }
@@ -615,7 +664,10 @@
     cells.forEach(cell => {
       const num = cell.dataset.number;
       const entry = data[num];
-      cell.classList.toggle('sold', !!entry);
+      const isReserved = !!entry && entry.status === 'reserved';
+      const isSold = !!entry && !isReserved;
+      cell.classList.toggle('sold', isSold);
+      cell.classList.toggle('reserved', isReserved);
 
       if (query) {
         const matches = num.includes(query) ||
@@ -631,12 +683,15 @@
   }
 
   function updateStats() {
-    const soldCount = Object.keys(data).length;
+    const entries = Object.values(data);
+    const reservedCount = entries.filter(e => e.status === 'reserved').length;
+    const soldCount = entries.length - reservedCount;
     const price = parseFloat(priceInput.value) || 0;
     statSold.textContent = soldCount;
-    statAvailable.textContent = 100 - soldCount;
+    statReserved.textContent = reservedCount;
+    statAvailable.textContent = 100 - soldCount - reservedCount;
     statTotal.textContent = '$' + (soldCount * price).toLocaleString('es-UY');
-    updateBackupBanner(soldCount);
+    updateBackupBanner(soldCount + reservedCount);
   }
 
   function updateBackupBanner(soldCount) {
@@ -653,6 +708,17 @@
     backupBanner.classList.toggle('hidden', !(needsBackup && !snoozed));
   }
 
+  let selectedStatus = 'sold';
+
+  function setSelectedStatus(status) {
+    selectedStatus = status;
+    statusSoldBtn.classList.toggle('active', status === 'sold');
+    statusReservedBtn.classList.toggle('active', status === 'reserved');
+  }
+
+  statusSoldBtn.addEventListener('click', () => setSelectedStatus('sold'));
+  statusReservedBtn.addEventListener('click', () => setSelectedStatus('reserved'));
+
   function openModal(num) {
     currentNumber = num;
     const entry = data[num];
@@ -660,6 +726,7 @@
     modalSub.textContent = entry ? 'Editar datos del comprador' : 'Cargar datos del comprador';
     buyerName.value = entry ? entry.name || '' : '';
     buyerRef.value = entry ? entry.ref || '' : '';
+    setSelectedStatus(entry && entry.status === 'reserved' ? 'reserved' : 'sold');
     clearBtn.style.display = entry ? 'block' : 'none';
     overlay.classList.remove('hidden');
     setTimeout(() => buyerName.focus(), 50);
@@ -678,7 +745,7 @@
       buyerName.focus();
       return;
     }
-    data[currentNumber] = { name, ref };
+    data[currentNumber] = { name, ref, status: selectedStatus };
     saveData();
     renderGrid();
     closeModal();
@@ -896,8 +963,9 @@
         const cx = gridX + col * (cellSize + gap);
         const cy = y + row * (cellSize + gap);
         const entry = data[num];
+        const isReserved = !!entry && entry.status === 'reserved';
         ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = entry ? '#16a34a' : '#000000';
+        ctx.strokeStyle = entry ? (isReserved ? '#ec4899' : '#16a34a') : '#000000';
         ctx.lineWidth = entry ? 2.5 : 1.5;
         roundRectPath(ctx, cx, cy, cellSize, cellSize, 6);
         ctx.fill();
@@ -909,7 +977,7 @@
         ctx.fillText(num, cx + cellSize / 2, cy + cellSize / 2 + 1);
         if (entry) {
           const badgeSize = cellSize * 0.5;
-          drawBall(ctx, cx + cellSize - badgeSize - 1, cy + 1, badgeSize, '#d7e600');
+          drawBall(ctx, cx + cellSize - badgeSize - 1, cy + 1, badgeSize, isReserved ? '#f472b6' : '#d7e600');
         }
       }
       y += gridSize + 20;
@@ -926,10 +994,14 @@
       ctx.stroke();
       ctx.fillStyle = '#f1f5f9';
       ctx.fillText('Disponible', lx + 24, y);
-      lx += 140;
+      lx += 130;
       drawBall(ctx, lx, y - 10, 20, '#d7e600');
       ctx.fillStyle = '#f1f5f9';
       ctx.fillText('Vendido', lx + 24, y);
+      lx += 110;
+      drawBall(ctx, lx, y - 10, 20, '#f472b6');
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillText('Reservado', lx + 24, y);
       y += legendHeight;
 
       if (price > 0) {
