@@ -413,6 +413,20 @@
     padding: 6px 10px;
     font-size: 0.78rem;
   }
+  .last-sold-banner {
+    max-width: 640px;
+    margin: 0 auto 16px auto;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--teal);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+  }
+  .last-sold-banner p {
+    margin: 0;
+    color: var(--text);
+  }
   .product-section {
     max-width: 640px;
     margin: 0 auto 16px auto;
@@ -543,6 +557,10 @@
   <div class="stat-card stat-reserved"><div class="value" id="statReserved">0</div><div class="label">Reservados</div></div>
   <div class="stat-card stat-available"><div class="value" id="statAvailable">100</div><div class="label">Disponibles</div></div>
   <div class="stat-card stat-total"><div class="value" id="statTotal">$0</div><div class="label">Recaudado</div></div>
+</div>
+
+<div class="last-sold-banner hidden" id="lastSoldBanner">
+  <p>🕓 Último vendido: <strong id="lastSoldDisplay"></strong></p>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -699,6 +717,8 @@
   const winnerNumberDisplay = document.getElementById('winnerNumberDisplay');
   const winnerBuyerDisplay = document.getElementById('winnerBuyerDisplay');
   const closeWinnerBtn = document.getElementById('closeWinnerBtn');
+  const lastSoldBanner = document.getElementById('lastSoldBanner');
+  const lastSoldDisplay = document.getElementById('lastSoldDisplay');
 
   let data = loadData();
   let currentNumber = null;
@@ -783,6 +803,29 @@
       }
     });
     updateStats();
+    renderLastSold();
+  }
+
+  function renderLastSold() {
+    let latestNum = null;
+    let latestEntry = null;
+    Object.keys(data).forEach(num => {
+      const entry = data[num];
+      if (entry.status === 'reserved' || !entry.soldAt) return;
+      if (!latestEntry || entry.soldAt > latestEntry.soldAt) {
+        latestNum = num;
+        latestEntry = entry;
+      }
+    });
+    if (!latestEntry) {
+      lastSoldBanner.classList.add('hidden');
+      return;
+    }
+    const d = new Date(latestEntry.soldAt);
+    const dateStr = d.toLocaleDateString('es-UY');
+    const timeStr = d.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
+    lastSoldDisplay.textContent = latestNum + (latestEntry.name ? ' - ' + latestEntry.name : '') + ' · ' + dateStr + ' ' + timeStr;
+    lastSoldBanner.classList.remove('hidden');
   }
 
   function updateStats() {
@@ -848,7 +891,7 @@
       buyerName.focus();
       return;
     }
-    data[currentNumber] = { name, ref, status: selectedStatus };
+    data[currentNumber] = { name, ref, status: selectedStatus, soldAt: new Date().toISOString() };
     saveData();
     renderGrid();
     closeModal();
