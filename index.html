@@ -582,6 +582,7 @@
 
 <div class="footer-actions">
   <button class="secondary accent-gold" id="downloadImageBtn">Descargar imagen (PNG)</button>
+  <button class="secondary accent-teal" id="exportParticipantsBtn">Descargar participantes</button>
   <button class="secondary accent-teal" id="exportBtn">Exportar backup</button>
   <button class="secondary accent-teal" id="importBtn">Importar backup</button>
   <button class="danger" id="resetBtn">Reiniciar todo</button>
@@ -693,6 +694,7 @@
   const statTotal = document.getElementById('statTotal');
   const statusSoldBtn = document.getElementById('statusSold');
   const statusReservedBtn = document.getElementById('statusReserved');
+  const exportParticipantsBtn = document.getElementById('exportParticipantsBtn');
   const exportBtn = document.getElementById('exportBtn');
   const importBtn = document.getElementById('importBtn');
   const importFile = document.getElementById('importFile');
@@ -1362,6 +1364,57 @@
       reader.readAsDataURL(file);
     });
   }
+
+  function exportParticipants() {
+    const nums = Object.keys(data);
+    if (nums.length === 0) {
+      alert('Todavía no hay ningún número cargado.');
+      return;
+    }
+    const groups = {};
+    nums.forEach(num => {
+      const entry = data[num];
+      const key = (entry.name || '').trim();
+      if (!groups[key]) groups[key] = { name: key, ref: entry.ref || '', nums: [] };
+      groups[key].nums.push({ num, status: entry.status });
+    });
+    const buyers = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+    let totalSold = 0;
+    let totalReserved = 0;
+    const lines = [];
+    const title = raffleTitle.value.trim() || 'Rifa';
+    lines.push('LISTADO DE PARTICIPANTES - ' + title);
+    lines.push('Generado: ' + new Date().toLocaleString('es-UY'));
+    lines.push('');
+    buyers.forEach((buyer, i) => {
+      buyer.nums.sort((a, b) => a.num.localeCompare(b.num));
+      const numsStr = buyer.nums.map(n => {
+        if (n.status === 'reserved') {
+          totalReserved++;
+          return n.num + ' (reservado)';
+        }
+        totalSold++;
+        return n.num;
+      }).join(', ');
+      lines.push((i + 1) + ') ' + buyer.name + (buyer.ref ? ' — ' + buyer.ref : ''));
+      lines.push('   ' + buyer.nums.length + (buyer.nums.length === 1 ? ' número: ' : ' números: ') + numsStr);
+      lines.push('');
+    });
+    lines.push('Total participantes: ' + buyers.length);
+    lines.push('Total números vendidos: ' + totalSold);
+    lines.push('Total números reservados: ' + totalReserved);
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rifa-participantes-' + new Date().toISOString().slice(0, 10) + '.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  exportParticipantsBtn.addEventListener('click', exportParticipants);
 
   function exportBackup() {
     const backup = {
