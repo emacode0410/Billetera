@@ -1049,7 +1049,7 @@
         imgBoxHeight = slotH + 26;
       }
 
-      const legendHeight = 40;
+      const legendHeight = 52;
       const priceHeight = price > 0 ? 34 : 0;
       const aliasHeight = alias ? 34 : 0;
       const warningHeight = 56;
@@ -1116,38 +1116,52 @@
         roundRectPath(ctx, cx, cy, cellSize, cellSize, 6);
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = '#111111';
-        ctx.font = 'bold ' + Math.round(cellSize * 0.34) + 'px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(num, cx + cellSize / 2, cy + cellSize / 2 + 1);
         if (entry) {
-          const badgeSize = cellSize * 0.5;
-          drawBall(ctx, cx + cellSize - badgeSize - 1, cy + 1, badgeSize, isReserved ? '#f472b6' : '#d7e600');
+          const badgeSize = cellSize * 0.86;
+          const bx = cx + (cellSize - badgeSize) / 2;
+          const by = cy + (cellSize - badgeSize) / 2;
+          drawBall(ctx, bx, by, badgeSize, isReserved ? '#f472b6' : '#d7e600');
+        } else {
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold ' + Math.round(cellSize * 0.34) + 'px Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(num, cx + cellSize / 2, cy + cellSize / 2 + 1);
         }
       }
       y += gridSize + 20;
 
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.font = '16px Arial, sans-serif';
-      let lx = gridX;
+      ctx.font = 'bold 20px Arial, sans-serif';
+      const legendIconSize = 28;
+      const legendGapIconText = 10;
+      const legendGapSegment = 36;
+      const legendLabels = ['Disponible', 'Vendido', 'Reservado'];
+      const legendWidths = legendLabels.map(l => ctx.measureText(l).width);
+      const legendTotalWidth = legendWidths.reduce((a, b) => a + b, 0) +
+        legendIconSize * 3 + legendGapIconText * 3 + legendGapSegment * 2;
+      let lx = (width - legendTotalWidth) / 2;
+      const legendIconY = y - legendIconSize / 2;
+
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1.5;
-      roundRectPath(ctx, lx, y - 8, 16, 16, 4);
+      ctx.lineWidth = 2;
+      roundRectPath(ctx, lx, legendIconY, legendIconSize, legendIconSize, 6);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#f1f5f9';
-      ctx.fillText('Disponible', lx + 24, y);
-      lx += 130;
-      drawBall(ctx, lx, y - 10, 20, '#d7e600');
+      ctx.fillText(legendLabels[0], lx + legendIconSize + legendGapIconText, y);
+      lx += legendIconSize + legendGapIconText + legendWidths[0] + legendGapSegment;
+
+      drawBall(ctx, lx, legendIconY, legendIconSize, '#d7e600');
       ctx.fillStyle = '#f1f5f9';
-      ctx.fillText('Vendido', lx + 24, y);
-      lx += 110;
-      drawBall(ctx, lx, y - 10, 20, '#f472b6');
+      ctx.fillText(legendLabels[1], lx + legendIconSize + legendGapIconText, y);
+      lx += legendIconSize + legendGapIconText + legendWidths[1] + legendGapSegment;
+
+      drawBall(ctx, lx, legendIconY, legendIconSize, '#f472b6');
       ctx.fillStyle = '#f1f5f9';
-      ctx.fillText('Reservado', lx + 24, y);
+      ctx.fillText(legendLabels[2], lx + legendIconSize + legendGapIconText, y);
       y += legendHeight;
 
       if (price > 0) {
