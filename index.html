@@ -1337,10 +1337,19 @@
         ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(0,0,0,0.4)';
         ctx.shadowBlur = 6;
-        ctx.font = 'bold 50px Arial, sans-serif';
-        ctx.fillText('RIFA VENDIDA', 0, -24);
-        ctx.font = 'bold 22px Arial, sans-serif';
-        ctx.fillText('Sortea en Quiniela Nocturna de Santa Fe', 0, 26);
+
+        const titleText = 'RIFA VENDIDA';
+        const subtitleText = 'Sortea en Quiniela Nocturna de Santa Fe';
+        const maxTextWidth = bandW * 0.6;
+        let bandFontSize = 34;
+        ctx.font = 'bold ' + bandFontSize + 'px Arial, sans-serif';
+        const subtitleWidth = ctx.measureText(subtitleText).width;
+        if (subtitleWidth > maxTextWidth) {
+          bandFontSize = Math.floor(bandFontSize * maxTextWidth / subtitleWidth);
+        }
+        ctx.font = 'bold ' + bandFontSize + 'px Arial, sans-serif';
+        ctx.fillText(titleText, 0, -24);
+        ctx.fillText(subtitleText, 0, 26);
 
         ctx.restore();
       }
