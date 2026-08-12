@@ -25,3 +25,9 @@ la información, usá el botón **Exportar backup** cada tanto y guardá el arch
 1. En GitHub, andá a *Settings > Pages*.
 2. Como fuente elegí la rama `main` (o la que uses) y la carpeta raíz.
 3. Guardá; GitHub te da una URL pública para usar la app desde el celular.
+
+## Créditos
+
+El ícono de pelota de tenis usado en la imagen descargable es de
+[Twemoji](https://github.com/twitter/twemoji) (Twitter/X), con licencia
+[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/).
