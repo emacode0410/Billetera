@@ -1068,6 +1068,12 @@
     const taglineFontSize = 20;
     const taglineHeight = taglineFontSize + 38;
 
+    let allSold = true;
+    for (let i = 0; i <= 99; i++) {
+      const entry = data[pad(i)];
+      if (!entry || entry.status !== 'sold') { allSold = false; break; }
+    }
+
     return Promise.all([
       Promise.all(productImageList.map(loadImageEl)),
       loadImageEl(FEMAK_LOGO),
@@ -1159,6 +1165,7 @@
         y += imgBoxHeight;
       }
 
+      const gridTop = y;
       for (let i = 0; i <= 99; i++) {
         const num = pad(i);
         const row = Math.floor(i / cols);
@@ -1299,6 +1306,42 @@
       ctx.strokeStyle = '#3d78b5';
       ctx.lineWidth = 6;
       ctx.strokeRect(3, 3, width - 6, height - 6);
+
+      if (allSold) {
+        ctx.save();
+        const bandCenterX = width / 2;
+        const bandCenterY = gridTop + gridSize * 0.46;
+        ctx.translate(bandCenterX, bandCenterY);
+        ctx.rotate(-22 * Math.PI / 180);
+
+        const bandW = width * 1.6;
+        const bandH = 110;
+        const bandGrad = ctx.createLinearGradient(-bandW / 2, 0, bandW / 2, 0);
+        bandGrad.addColorStop(0, '#7f1d1d');
+        bandGrad.addColorStop(0.5, '#dc2626');
+        bandGrad.addColorStop(1, '#7f1d1d');
+        ctx.fillStyle = bandGrad;
+        ctx.fillRect(-bandW / 2, -bandH / 2, bandW, bandH);
+
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-bandW / 2, -bandH / 2);
+        ctx.lineTo(bandW / 2, -bandH / 2);
+        ctx.moveTo(-bandW / 2, bandH / 2);
+        ctx.lineTo(bandW / 2, bandH / 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 54px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 6;
+        ctx.fillText('RIFA VENDIDA', 0, 4);
+
+        ctx.restore();
+      }
 
       return canvas;
     });
