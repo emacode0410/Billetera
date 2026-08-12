@@ -970,54 +970,79 @@
   function drawBall(ctx, x, y, size, color) {
     const cx = x + size / 2;
     const cy = y + size / 2;
-    const r = size / 2 - size * 0.04;
-    const light = shadeColor(color, 45);
-    const dark = shadeColor(color, -35);
-    const darker = shadeColor(color, -55);
+    const r = size / 2 - size * 0.09;
+    const light = shadeColor(color, 30);
+    const dark = shadeColor(color, -30);
+    const darker = shadeColor(color, -50);
 
-    const shadowGrad = ctx.createRadialGradient(cx, cy + r * 0.78, r * 0.1, cx, cy + r * 0.78, r * 0.78);
+    const shadowGrad = ctx.createRadialGradient(cx, cy + r * 0.85, r * 0.1, cx, cy + r * 0.85, r * 0.85);
     shadowGrad.addColorStop(0, 'rgba(0,0,0,0.28)');
     shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = shadowGrad;
     ctx.beginPath();
-    ctx.ellipse(cx, cy + r * 0.78, r * 0.78, r * 0.22, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy + r * 0.85, r * 0.85, r * 0.24, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const bodyGrad = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.08, cx, cy, r * 1.05);
+    // fuzzy edge: short fiber strokes radiating from the rim, drawn before the body
+    ctx.save();
+    const fiberCount = Math.max(50, Math.round(r * 3));
+    for (let i = 0; i < fiberCount; i++) {
+      const angle = (i / fiberCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
+      const len = size * (0.035 + Math.random() * 0.06);
+      const startR = r * (0.9 + Math.random() * 0.08);
+      const sx = cx + Math.cos(angle) * startR;
+      const sy = cy + Math.sin(angle) * startR;
+      const ex = cx + Math.cos(angle) * (startR + len);
+      const ey = cy + Math.sin(angle) * (startR + len);
+      ctx.strokeStyle = Math.random() > 0.5 ? color : dark;
+      ctx.globalAlpha = 0.3 + Math.random() * 0.35;
+      ctx.lineWidth = Math.max(0.6, size * 0.012);
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    const bodyGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.08, cx, cy, r * 1.1);
     bodyGrad.addColorStop(0, light);
-    bodyGrad.addColorStop(0.5, color);
+    bodyGrad.addColorStop(0.55, color);
     bodyGrad.addColorStop(1, dark);
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = darker;
-    ctx.lineWidth = Math.max(1, size * 0.04);
+    ctx.strokeStyle = dark;
+    ctx.lineWidth = Math.max(1, size * 0.02);
     ctx.stroke();
 
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
-    const dotCount = Math.max(16, Math.round(r * 0.9));
-    for (let i = 0; i < dotCount; i++) {
+    const fiberInnerCount = Math.max(50, Math.round(r * 1.8));
+    for (let i = 0; i < fiberInnerCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const dist = Math.sqrt(Math.random()) * r * 0.95;
-      const dx = cx + Math.cos(angle) * dist;
-      const dy = cy + Math.sin(angle) * dist;
-      const dotR = size * (0.015 + Math.random() * 0.02);
-      ctx.fillStyle = Math.random() > 0.5 ? light : darker;
-      ctx.globalAlpha = 0.08 + Math.random() * 0.1;
+      const px = cx + Math.cos(angle) * dist;
+      const py = cy + Math.sin(angle) * dist;
+      const strokeAngle = Math.random() * Math.PI * 2;
+      const len = size * (0.015 + Math.random() * 0.025);
+      ctx.strokeStyle = Math.random() > 0.5 ? light : darker;
+      ctx.globalAlpha = 0.1 + Math.random() * 0.14;
+      ctx.lineWidth = Math.max(0.5, size * 0.008);
       ctx.beginPath();
-      ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(strokeAngle) * len, py + Math.sin(strokeAngle) * len);
+      ctx.stroke();
     }
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
-    ctx.lineWidth = Math.max(1, size * 0.03);
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = Math.max(1, size * 0.028);
     ctx.beginPath();
     ctx.moveTo(cx - r * 0.55, cy - r * 0.9);
     ctx.quadraticCurveTo(cx + r * 0.35, cy, cx - r * 0.55, cy + r * 0.9);
@@ -1028,14 +1053,14 @@
     ctx.stroke();
 
     const highlightGrad = ctx.createRadialGradient(
-      cx - r * 0.4, cy - r * 0.45, 0,
-      cx - r * 0.4, cy - r * 0.45, r * 0.5
+      cx - r * 0.35, cy - r * 0.4, 0,
+      cx - r * 0.35, cy - r * 0.4, r * 0.8
     );
-    highlightGrad.addColorStop(0, 'rgba(255,255,255,0.85)');
+    highlightGrad.addColorStop(0, 'rgba(255,255,255,0.4)');
     highlightGrad.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = highlightGrad;
     ctx.beginPath();
-    ctx.ellipse(cx - r * 0.4, cy - r * 0.45, r * 0.42, r * 0.3, -0.4, 0, Math.PI * 2);
+    ctx.arc(cx - r * 0.35, cy - r * 0.4, r * 0.8, 0, Math.PI * 2);
     ctx.fill();
   }
 
