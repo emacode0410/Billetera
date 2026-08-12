@@ -1071,7 +1071,7 @@
     let allSold = true;
     for (let i = 0; i <= 99; i++) {
       const entry = data[pad(i)];
-      if (!entry || entry.status !== 'sold') { allSold = false; break; }
+      if (!entry || entry.status === 'reserved') { allSold = false; break; }
     }
 
     return Promise.all([
